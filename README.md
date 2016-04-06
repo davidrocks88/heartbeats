@@ -8,12 +8,12 @@ Last Updated: April 6, 2016
 * Flora Liu
 * Dani Kupfer
 
-## Purpose
+## Purpose - heartbeatz.ino
 *  Receives a signal from a lightblue bean that is a hearbeat signal 
 *  prints to the serial port the average bpm for the given signal
 
-## Usage: 
-*  Compile and upload the program to a bean
+## Usage - heartbeatz.ino 
+*  Compile and upload the program to a bean via arduino bean loader
 *  Connect the HEART pin to the signal pin for the heartbeat sensor
 *  Interface bean's serial port with another device to process bpm data
   
