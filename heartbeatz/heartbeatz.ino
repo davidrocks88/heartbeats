@@ -1,7 +1,7 @@
 /*
  * heartbeatz.ino
  * David Bernstein, Gabriella Bova, Chase Conley, Flora Liu, Dani Kupfer
- * Last Updated: April 6, 2016
+ * Last Updated: April 10, 2016
  *
  * Purpose: 
  *          - Receives a signal from a lightblue bean that is a hearbeat signal 
@@ -9,6 +9,8 @@
  * Usage: 
  *        - Compile and upload the program to a bean via arduino bean loader
  *        - Connect the HEART pin to the signal pin for the heartbeat sensor
+ *        - Connect the PLAY pin to the PLAY button
+ *        - Connect the SKIP pin to the skip button
  *        - Interface bean's serial port with another device to process bpm data
  */
 
@@ -32,6 +34,8 @@
  */
 void beat();
 ulong queueAvg();
+void play();
+void skiph();
 
 /* 
  * Constants
@@ -39,11 +43,15 @@ ulong queueAvg();
  *   - MICROSEC_PER_SEC => number of microseconds in a full second
  *   - NUMBEATS => number of beats to take running average over
  *   - HEART => pin to be used to sense the heartbeat signal
+ *   - PLAY => pin to be used for play button
+ *   - SKIP => pin to be used for skip button
  */
 const ulong SEC_PER_MIN = 60;
 const ulong MICROSEC_PER_SEC = 1000000;
 const int NUMBEATS = 20;
 const int HEART = 0;
+const int PLAY_BUTTON = 1;
+const int SKIP_BUTTON = 2;
 
 /*
  * Global variables
@@ -62,10 +70,14 @@ QueueList <ulong> beatQueue;
 /* 
  * setup()
  *   - Sets up the heart pin so that beat() is called for every beat sensed
+ *   - Sets up play and skip to go to their appropriate functions
  *   - Configures serial for bean and queue at 9600 bps
  */
 void setup() {
   attachPinChangeInterrupt(HEART, beat, FALLING);
+  //attachPinChangeInterrupt(PLAY_BUTTON, play, FALLING);
+  attachPinChangeInterrupt(PAUSE_BUTTON, skiph, FALLING);
+
   Serial.begin (57600); // 9600 bps
   beatQueue.setPrinter(Serial);
 
@@ -78,6 +90,26 @@ void setup() {
 void loop() {
 
 }
+
+/*
+ * play()
+ *   - called when play button is pressed
+ *   - sends the PLAY_MESSAGE to the serial port
+ */
+void play() {
+  Serial.println("PLAY"); 
+}
+
+/*
+ * skip()
+ *   - called when play button is pressed
+ *   - sends the SKIP_MESSAGE to the serial port
+ */
+void skiph() {
+  Serial.println("SKIP"); 
+}
+
+
 
 /* 
  * beat()
