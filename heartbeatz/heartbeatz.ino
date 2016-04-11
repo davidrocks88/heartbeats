@@ -9,7 +9,7 @@
  * Usage: 
  *        - Compile and upload the program to a bean via arduino bean loader
  *        - Connect the HEART pin to the signal pin for the heartbeat sensor
- *        - Connect the PLAY pin to the PLAY button
+ *        - Connect the PLAY_PAUSE pin to the PLAY_PAUSE button
  *        - Connect the SKIP pin to the skip button
  *        - Interface bean's serial port with another device to process bpm data
  */
@@ -31,11 +31,12 @@
  * Function Prototypes
  *   - beat() => called for every beat and logs out the average BPM sensed
  *   - queueAvg() => returns the average of the global queue at any given time
+ *   - skip() and play() => outputs appropriate message when button is pressed
  */
 void beat();
 ulong queueAvg();
 void play();
-void skiph();
+void skip();
 
 /* 
  * Constants
@@ -43,25 +44,30 @@ void skiph();
  *   - MICROSEC_PER_SEC => number of microseconds in a full second
  *   - NUMBEATS => number of beats to take running average over
  *   - HEART => pin to be used to sense the heartbeat signal
- *   - PLAY => pin to be used for play button
+ *   - PLAYPAUSE_BUTTON => pin to be used for play/pause button
  *   - SKIP => pin to be used for skip button
  */
 const ulong SEC_PER_MIN = 60;
 const ulong MICROSEC_PER_SEC = 1000000;
 const int NUMBEATS = 20;
 const int HEART = 0;
-const int PLAY_BUTTON = 1;
+const int PLAYPAUSE_BUTTON = 1;
 const int SKIP_BUTTON = 2;
+const char* PLAY_MESSAGE = "PLAY";
+const char* PAUSE_MESSAGE = "PAUSE";
+const char* SKIP_MESSAGE = "SKIP";
 
 /*
  * Global variables
  *   - start => starting time for each heart beat
  *   - ended => ending time for each heart beat
  *   - beatQueue => holds the times between the NUMBEATS most recent beats
+ *   - playpause => decides if pressing the play button plays or pauses
  */
 ulong start = 0;
 ulong ended = 0;
 QueueList <ulong> beatQueue;
+bool playpause = true;
 
 /******************************************************************************
  *                              Implementation                                *
@@ -75,8 +81,8 @@ QueueList <ulong> beatQueue;
  */
 void setup() {
   attachPinChangeInterrupt(HEART, beat, FALLING);
-  //attachPinChangeInterrupt(PLAY_BUTTON, play, FALLING);
-  attachPinChangeInterrupt(PAUSE_BUTTON, skiph, FALLING);
+  attachPinChangeInterrupt(PLAYPAUSE_BUTTON, play, FALLING);
+  attachPinChangeInterrupt(SKIP_BUTTON, skip, FALLING);
 
   Serial.begin (57600); // 9600 bps
   beatQueue.setPrinter(Serial);
@@ -94,10 +100,18 @@ void loop() {
 /*
  * play()
  *   - called when play button is pressed
- *   - sends the PLAY_MESSAGE to the serial port
+ *   - sends the PLAY_MESSAGE or PAUSE_MESSAGE to the serial port
+ *   - changes value of playpause after every function call
  */
 void play() {
-  Serial.println("PLAY"); 
+  if(playpause) {
+    Serial.println(PLAY_MESSAGE);
+  }
+  else {
+    Serial.println(PAUSE_MESSAGE);
+  }
+  
+  playpause = !playpause;
 }
 
 /*
@@ -105,10 +119,9 @@ void play() {
  *   - called when play button is pressed
  *   - sends the SKIP_MESSAGE to the serial port
  */
-void skiph() {
-  Serial.println("SKIP"); 
+void skip() {
+  Serial.println(SKIP_MESSAGE); 
 }
-
 
 
 /* 
