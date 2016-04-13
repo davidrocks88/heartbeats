@@ -1,7 +1,7 @@
 /*
  * heartbeatz.ino
  * David Bernstein, Gabriella Bova, Chase Conley, Flora Liu, Dani Kupfer
- * Last Updated: April 10, 2016
+ * Last Updated: April 13, 2016
  *
  * Purpose: 
  *          - Receives a signal from a lightblue bean that is a hearbeat signal 
@@ -32,12 +32,13 @@
  *   - beat() => called for every beat and logs out the average BPM sensed
  *   - queueAvg() => returns the average of the global queue at any given time
  *   - skip() and play() => outputs appropriate message when button is pressed
+ *   - threshold() => transforms a bpm to a threshold code of 0 through 5
  */
 void beat();
 ulong queueAvg();
 void play();
 void skip();
-
+int threshold(ulong bpm);
 /* 
  * Constants
  *   - SEC_PER_MIN => number of seconds in a minute
@@ -154,7 +155,9 @@ void beat() {
    
    beatQueue.push(diff);
    
-   Serial.println(SEC_PER_MIN * MICROSEC_PER_SEC / queueAvg());
+   ulong bpm = SEC_PER_MIN * MICROSEC_PER_SEC / queueAvg();
+   
+   Serial.println(threshold(bpm));
 }
 
 /*
@@ -171,4 +174,17 @@ ulong queueAvg() {
   }
   
   return avg / 10; 
+}
+
+/*
+ * threshold(bpm)
+ * returns the appropriate threshold code according to the given bpm value
+ */
+int threshold(ulong bpm) {
+  if(bpm <= 60) return 0;
+  else if(bpm <= 90) return 1;
+  else if(bpm <= 110) return 2;
+  else if(bpm <= 130) return 3;
+  else if(bpm <= 150) return 4;
+  else return 5;
 }
