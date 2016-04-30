@@ -54,9 +54,9 @@ const int NUMBEATS = 20;
 const int HEART = 0;
 const int PLAYPAUSE_BUTTON = 1;
 const int SKIP_BUTTON = 2;
-const char* PLAY_MESSAGE = "PLAY";
-const char* PAUSE_MESSAGE = "PAUSE";
-const char* SKIP_MESSAGE = "SKIP";
+const char* PLAY_MESSAGE = "7play";
+const char* PAUSE_MESSAGE = "8pause";
+const char* SKIP_MESSAGE = "6skip";
 
 /*
  * Global variables
@@ -64,11 +64,16 @@ const char* SKIP_MESSAGE = "SKIP";
  *   - ended => ending time for each heart beat
  *   - beatQueue => holds the times between the NUMBEATS most recent beats
  *   - playpause => decides if pressing the play button plays or pauses
+ *   - start_pp and start_skip => timer for whether or not to log a message
  */
 ulong start = 0;
 ulong ended = 0;
+ulong start_pp = 0;
+ulong start_skip = 0;
 QueueList <ulong> beatQueue;
 bool playpause = true;
+
+
 
 /******************************************************************************
  *                              Implementation                                *
@@ -81,10 +86,14 @@ bool playpause = true;
  *   - Configures serial for bean and queue at 9600 bps
  */
 void setup() {
-  attachPinChangeInterrupt(HEART, beat, FALLING);
+   
+  pinMode(PLAYPAUSE_BUTTON, INPUT_PULLUP);
+  pinMode(SKIP_BUTTON, INPUT_PULLUP);
+  pinMode(HEART, INPUT_PULLUP);
+  
   attachPinChangeInterrupt(PLAYPAUSE_BUTTON, play, FALLING);
   attachPinChangeInterrupt(SKIP_BUTTON, skip, FALLING);
-
+  attachPinChangeInterrupt(HEART, beat, FALLING);
   Serial.begin (57600); // 9600 bps
   beatQueue.setPrinter(Serial);
 
@@ -95,35 +104,46 @@ void setup() {
  *   - does nothing, the program is inactive without any heartbeat signal
  */
 void loop() {
-
+//  Serial.println("running");
 }
 
 /*
  * play()
  *   - called when play button is pressed
- *   - sends the PLAY_MESSAGE or PAUSE_MESSAGE to the serial port
+ *   - sends the PLAY_MESSAGE or PAUSE_MESSAGE to the serial port if a 
+ *     second has passed since the last message
  *   - changes value of playpause after every function call
  */
 void play() {
-  if(playpause) {
-    Serial.println(PLAY_MESSAGE);
+  ulong end_pp = micros();
+  ulong diff = end_pp - start_pp;
+  if(diff > MICROSEC_PER_SEC) {
+    if(playpause) {
+      Serial.println(PLAY_MESSAGE);
+    }
+    else {
+      Serial.println(PAUSE_MESSAGE);
+    }
+    start_pp = micros();
+    playpause = !playpause;
   }
-  else {
-    Serial.println(PAUSE_MESSAGE);
-  }
-  
-  playpause = !playpause;
 }
 
 /*
  * skip()
  *   - called when play button is pressed
- *   - sends the SKIP_MESSAGE to the serial port
+ *   - sends the SKIP_MESSAGE to the serial port if a second has passed
+ *     since the last SKIP_MESSAGE
  */
 void skip() {
-  Serial.println(SKIP_MESSAGE); 
+  ulong end_skip = micros(); 
+  ulong diff = end_skip - start_skip;
+  if(diff > MICROSEC_PER_SEC) {
+    Serial.println(SKIP_MESSAGE);
+    start_skip = micros();
+  }
 }
-
+int a = 0;
 
 /* 
  * beat()
@@ -136,10 +156,11 @@ void skip() {
  *     of the queue back to NUMBEATS
  */
 void beat() {
-   ulong average = 0;
+  ulong average = 0;
    ulong diff = 0;
    
-   if(beatQueue.count() == 0) {
+   //if(beatQueue.count() == 0) {
+     if(a++ == 0) {
      start = micros();
      return;
    }
@@ -157,7 +178,8 @@ void beat() {
    
    ulong bpm = SEC_PER_MIN * MICROSEC_PER_SEC / queueAvg();
    
-   Serial.println(threshold(bpm));
+   if(beatQueue.count() >= 10) 
+     Serial.println(threshold(bpm));
 }
 
 /*
