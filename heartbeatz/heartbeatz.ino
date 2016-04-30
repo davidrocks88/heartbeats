@@ -50,13 +50,13 @@ int threshold(ulong bpm);
  */
 const ulong SEC_PER_MIN = 60;
 const ulong MICROSEC_PER_SEC = 1000000;
-const int NUMBEATS = 20;
-const int HEART = 0;
-const int PLAYPAUSE_BUTTON = 1;
-const int SKIP_BUTTON = 2;
-const char* PLAY_MESSAGE = "7play";
-const char* PAUSE_MESSAGE = "8pause";
-const char* SKIP_MESSAGE = "6skip";
+const int NUMBEATS = 10;
+const int HEART = 2;
+const int PLAYPAUSE_BUTTON = 4;
+const int SKIP_BUTTON = 5;
+const char* SKIP_MESSAGE = "6";
+const char* PLAY_MESSAGE = "7";
+const char* PAUSE_MESSAGE = "8";
 
 /*
  * Global variables
@@ -86,7 +86,6 @@ bool playpause = true;
  *   - Configures serial for bean and queue at 9600 bps
  */
 void setup() {
-   
   pinMode(PLAYPAUSE_BUTTON, INPUT_PULLUP);
   pinMode(SKIP_BUTTON, INPUT_PULLUP);
   pinMode(HEART, INPUT_PULLUP);
@@ -94,9 +93,9 @@ void setup() {
   attachPinChangeInterrupt(PLAYPAUSE_BUTTON, play, FALLING);
   attachPinChangeInterrupt(SKIP_BUTTON, skip, FALLING);
   attachPinChangeInterrupt(HEART, beat, FALLING);
+  
   Serial.begin (57600); // 9600 bps
   beatQueue.setPrinter(Serial);
-
 }
 
 /* 
@@ -104,7 +103,6 @@ void setup() {
  *   - does nothing, the program is inactive without any heartbeat signal
  */
 void loop() {
-//  Serial.println("running");
 }
 
 /*
@@ -117,7 +115,8 @@ void loop() {
 void play() {
   ulong end_pp = micros();
   ulong diff = end_pp - start_pp;
-  if(diff > MICROSEC_PER_SEC) {
+  
+  if(diff > MICROSEC_PER_SEC/2) {
     if(playpause) {
       Serial.println(PLAY_MESSAGE);
     }
@@ -138,7 +137,8 @@ void play() {
 void skip() {
   ulong end_skip = micros(); 
   ulong diff = end_skip - start_skip;
-  if(diff > MICROSEC_PER_SEC) {
+  
+  if(diff > MICROSEC_PER_SEC/2) {
     Serial.println(SKIP_MESSAGE);
     start_skip = micros();
   }
@@ -157,29 +157,29 @@ int a = 0;
  */
 void beat() {
   ulong average = 0;
-   ulong diff = 0;
+  ulong diff = 0;
    
-   //if(beatQueue.count() == 0) {
-     if(a++ == 0) {
-     start = micros();
-     return;
-   }
-   else {
-     ended = micros();
-     diff = ended - start; 
-     start = micros();
-   }
+ if(a++ == 0) {
+   start = micros();
+   return;
+ }
+ else {
+    ended = micros();
+    diff = ended - start; 
+    start = micros();
+ }
    
-   if(beatQueue.count() == NUMBEATS) {
-     beatQueue.pop();
-   }
+ if(beatQueue.count() >= NUMBEATS) {
+   beatQueue.pop();
+ }
    
-   beatQueue.push(diff);
-   
-   ulong bpm = SEC_PER_MIN * MICROSEC_PER_SEC / queueAvg();
-   
-   if(beatQueue.count() >= 10) 
-     Serial.println(threshold(bpm));
+ beatQueue.push(diff);
+ 
+ ulong bpm = SEC_PER_MIN * MICROSEC_PER_SEC / queueAvg();
+ 
+ if(beatQueue.count() >= 10) 
+   Serial.println(threshold(bpm));
+   //Serial.println(bpm);
 }
 
 /*
@@ -195,7 +195,7 @@ ulong queueAvg() {
     beatQueue.push(temp);    
   }
   
-  return avg / 10; 
+  return avg / beatQueue.count(); 
 }
 
 /*
@@ -203,8 +203,7 @@ ulong queueAvg() {
  * returns the appropriate threshold code according to the given bpm value
  */
 int threshold(ulong bpm) {
-  if(bpm <= 60) return 0;
-  else if(bpm <= 90) return 1;
+  if(bpm <= 90) return 1;
   else if(bpm <= 110) return 2;
   else if(bpm <= 130) return 3;
   else if(bpm <= 150) return 4;
