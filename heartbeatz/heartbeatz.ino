@@ -1,7 +1,7 @@
 /*
  * heartbeatz.ino
  * David Bernstein, Gabriella Bova, Chase Conley, Flora Liu, Dani Kupfer
- * Last Updated: April 13, 2016
+ * Last Updated: May 6, 2016
  *
  * Purpose: 
  *          - Receives a signal from a lightblue bean that is a hearbeat signal 
@@ -65,11 +65,13 @@ const char* PAUSE_MESSAGE = "8";
  *   - beatQueue => holds the times between the NUMBEATS most recent beats
  *   - playpause => decides if pressing the play button plays or pauses
  *   - start_pp and start_skip => timer for whether or not to log a message
+ *   - no_beats => variable for base case of having no beats yet
  */
 ulong start = 0;
 ulong ended = 0;
 ulong start_pp = 0;
 ulong start_skip = 0;
+int no_beats = 0;
 QueueList <ulong> beatQueue;
 bool playpause = true;
 
@@ -89,11 +91,11 @@ void setup() {
   pinMode(PLAYPAUSE_BUTTON, INPUT_PULLUP);
   pinMode(SKIP_BUTTON, INPUT_PULLUP);
   pinMode(HEART, INPUT_PULLUP);
-  
+
   attachPinChangeInterrupt(PLAYPAUSE_BUTTON, play, FALLING);
   attachPinChangeInterrupt(SKIP_BUTTON, skip, FALLING);
   attachPinChangeInterrupt(HEART, beat, FALLING);
-  
+
   Serial.begin (57600); // 9600 bps
   beatQueue.setPrinter(Serial);
 }
@@ -143,7 +145,6 @@ void skip() {
     start_skip = micros();
   }
 }
-int a = 0;
 
 /* 
  * beat()
@@ -159,7 +160,7 @@ void beat() {
   ulong average = 0;
   ulong diff = 0;
    
- if(a++ == 0) {
+ if(no_beats++ == 0) {
    start = micros();
    return;
  }
